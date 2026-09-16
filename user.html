@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- Standard Dashboard CSS --- */
+        :root {
+            --primary-blue: #4a90e2; --light-blue: #9bc2e6; --bg-color: #f4f7f6;
+            --text-main: #333333; --text-muted: #666666; --card-bg: #ffffff;
+            --border-color: #e1e4e8; --transition: all 0.3s ease;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; }
+
+        .app-container { display: flex; flex-direction: column; min-height: 100vh; }
+        .top-header { background-color: var(--card-bg); padding: 20px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        .top-header h1 { font-size: 24px; font-weight: 700; color: var(--primary-blue); }
+        .logout-btn { background-color: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        
+        .main-workspace { display: flex; flex: 1; padding: 20px; gap: 20px; max-width: 1600px; margin: 0 auto; width: 100%; }
+        
+        /* Sidebar */
+        .sidebar { width: 240px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+        .nav-item { background-color: var(--card-bg); padding: 15px 20px; border-radius: 8px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: var(--transition); text-decoration: none; display: block; }
+        .nav-item:hover, .nav-item.active { background-color: var(--light-blue); color: #1a365d; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(155, 194, 230, 0.4); }
+
+        /* Content Area */
+        .content-area { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+        .card { background-color: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 2px 15px rgba(0,0,0,0.04); border: 1px solid var(--border-color); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card-title { font-size: 18px; font-weight: 600; color: var(--text-main); }
+        
+        /* Table & Buttons */
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background-color: #f8fafc; font-weight: 600; color: var(--text-muted); font-size: 13px; text-transform: uppercase; }
+        
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; }
+        .btn-primary { background-color: var(--primary-blue); color: white; }
+        .btn-add { background-color: #27ae60; color: white; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; margin-right: 5px; }
+        .btn-edit { background-color: #f39c12; color: white; }
+        
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background-color: var(--card-bg); padding: 30px; border-radius: 12px; width: 420px; }
+        input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid var(--border-color); border-radius: 6px; }
+    </style>
+    <style>
+        /* Header User Profile Layout */
+.top-header { 
+    background-color: var(--card-bg); 
+    padding: 20px 30px; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+.user-profile-bar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-info {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.user-role-badge {
+    background-color: var(--light-blue);
+    color: #1a365d;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+.logout-btn { 
+    background-color: #e74c3c; 
+    color: white; 
+    border: none; 
+    padding: 8px 16px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    transition: var(--transition); 
+}
+
+.logout-btn:hover { 
+    background-color: #c0392b; 
+}
+    </style>
+</head>
+<body>
+
+<!-- AUTH GUARD SCRIPT - Put this at the top of EVERY page -->
+<script>
+    const sessionUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!sessionUser) window.location.href = 'login.html';
+    
+    // Only Admin can access the User Management page
+    if (sessionUser.role !== 'Admin') {
+        alert("Access Denied: You do not have permission to view User Management.");
+        window.location.href = 'index.html'; 
+    }
+
+    function logout() {
+        localStorage.removeItem('currentUser');
+        window.location.href = 'login.html';
+    }
+</script>
+
+<div class="app-container">
+    <header class="top-header">
+    <h1>BUDDLEPLUS DASHBOARD</h1>
+    
+    <div class="user-profile-bar">
+        <div class="user-info">
+            👤 <span id="currentUserName">Loading...</span>
+            <span id="currentUserRole" class="user-role-badge">Role</span>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+</header>
+
+    <div class="main-workspace">
+        <nav class="sidebar">
+            <!-- Sidebar limits will also be enforced visually via JS below -->
+            <a href="index.html" class="nav-item">DASHBOARD</a>
+            <a href="HRM.html" class="nav-item">HUMAN RESOURCES</a>
+            <a href="Operation.html" class="nav-item">OPERATION</a>
+            <a href="finance.html" class="nav-item">FINANCE</a>
+            <a href="report.html" class="nav-item">REPORT</a>
+            <a href="user.html" class="nav-item active">USER</a>
+        </nav>
+
+        <main class="content-area">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">System Users & Access Control</h2>
+                    <button class="btn btn-add" onclick="showModal()">+ Create User</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Role / Authority</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- User Modal -->
+<div id="userModal" class="modal">
+    <div class="modal-content">
+        <h2 class="card-title" id="modalTitle">Create New User</h2>
+        
+        <input type="text" id="username" placeholder="Username (e.g. sok.san)">
+        <input type="text" id="password" placeholder="Password">
+        
+        <label style="font-size: 13px; color: var(--text-muted); margin-top:10px; display:block;">Select Authority / Role</label>
+        <select id="userRole">
+            <option value="Admin">Admin (Access Everything)</option>
+            <option value="HR">HR Manager (HRM Page Only)</option>
+            <option value="Finance">Finance Manager (Finance Page/report)</option>
+            <option value="Operation">Operations Manager (Operations Only)</option>
+        </select>
+
+        <label style="font-size: 13px; color: var(--text-muted); margin-top:10px; display:block;">Account Status</label>
+        <select id="userStatus">
+            <option value="Active">Active</option>
+            <option value="Suspended">Suspended</option>
+        </select>
+        
+        <div style="display:flex; gap: 10px; margin-top: 15px;">
+            <button class="btn" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveUser()">Save User</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('welcomeText').innerText = `Welcome, ${sessionUser.username}`;
+
+    let users = JSON.parse(localStorage.getItem('buddleUsers')) || [];
+    let currentEditIndex = -1;
+
+    function renderUsers() {
+        const tbody = document.getElementById('userTableBody');
+        tbody.innerHTML = users.map((u, index) => `
+            <tr>
+                <td style="font-weight: 500;">${u.username}</td>
+                <td>
+                    <span style="background-color: var(--light-blue); color:#1a365d; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:600;">
+                        ${u.role}
+                    </span>
+                </td>
+                <td>
+                    <span style="color: ${u.status === 'Active' ? '#27ae60' : '#e74c3c'}; font-weight:600;">
+                        ${u.status}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-edit" onclick="editUser(${index})">Edit</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function saveUser() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const role = document.getElementById('userRole').value;
+        const status = document.getElementById('userStatus').value;
+
+        if(!username || !password) return alert("Username and Password are required.");
+
+        const userData = {
+            id: currentEditIndex > -1 ? users[currentEditIndex].id : Date.now(),
+            username, password, role, status
+        };
+
+        if (currentEditIndex > -1) {
+            users[currentEditIndex] = userData;
+        } else {
+            // Check if username exists
+            if (users.find(u => u.username === username)) return alert("Username already exists!");
+            users.push(userData);
+        }
+
+        localStorage.setItem('buddleUsers', JSON.stringify(users));
+        renderUsers();
+        closeModal();
+    }
+
+    function editUser(index) {
+        currentEditIndex = index;
+        const u = users[index];
+        document.getElementById('modalTitle').innerText = "Edit User";
+        document.getElementById('username').value = u.username;
+        document.getElementById('password').value = u.password;
+        document.getElementById('userRole').value = u.role;
+        document.getElementById('userStatus').value = u.status;
+        document.getElementById('userModal').style.display = 'flex';
+    }
+
+    function showModal() {
+        currentEditIndex = -1;
+        document.getElementById('modalTitle').innerText = "Create New User";
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('userModal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('userModal').style.display = 'none'; }
+
+    renderUsers();
+</script>
+<script>
+    // --- UNIVERSAL AUTH & NAVIGATION GUARD ---
+    (function initAuthGuard() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+        // 1. Redirect if not logged in
+        if (!currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // 2. Identify current page
+        const path = window.location.pathname;
+        const currentPage = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+
+        // 3. Page Access Matrix
+        const role = currentUser.role;
+        let allowed = true;
+
+        if (role === 'HR' && !['HRM.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Finance' && !['finance.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Operation' && !['Operation.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role !== 'Admin' && currentPage === 'user.html') {
+            allowed = false;
+        }
+
+        // 4. Kick out if role is restricted
+        if (!allowed) {
+            alert("Access Denied: Your account role (" + role + ") does not have permission to view this page.");
+            window.location.href = 'index.html';
+            return;
+        }
+
+        // 5. Update Header with Current User Info
+        document.addEventListener("DOMContentLoaded", function() {
+            const nameElem = document.getElementById('currentUserName');
+            const roleElem = document.getElementById('currentUserRole');
+            
+            if (nameElem) nameElem.innerText = currentUser.username;
+            if (roleElem) roleElem.innerText = currentUser.role;
+        });
+    })();
+
+    // --- LOGOUT FUNCTION ---
+    function logout() {
+        if (confirm("Are you sure you want to log out?")) {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+    }
+</script>
+
+</body>
+</html>

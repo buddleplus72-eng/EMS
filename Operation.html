@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operation Dashboard - Attendance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Base & Reset --- */
+        :root {
+            --primary-blue: #4a90e2;
+            --light-blue: #9bc2e6;
+            --bg-color: #f4f7f6;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --card-bg: #ffffff;
+            --border-color: #e1e4e8;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden; 
+        }
+
+        /* --- Layout --- */
+        .app-container { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+        }
+        
+        .top-header { 
+            background-color: var(--card-bg); 
+            padding: 20px 30px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            z-index: 100;
+            flex-shrink: 0; 
+        }
+        
+        .top-header h1 { font-size: 24px; font-weight: 700; color: var(--primary-blue); }
+        
+        .main-workspace { 
+            display: flex; 
+            flex: 1; 
+            padding: 20px; 
+            gap: 20px; 
+            max-width: 1600px; 
+            margin: 0 auto; 
+            width: 100%; 
+            overflow: hidden; 
+        }
+        
+        /* Sidebar */
+        .sidebar { 
+            width: 240px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            flex-shrink: 0; 
+            overflow-y: auto; 
+        }
+        .nav-item { background-color: var(--card-bg); padding: 15px 20px; border-radius: 8px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: var(--transition); border: 1px solid transparent; text-decoration: none; display: block;}
+        .nav-item:hover, .nav-item.active { background-color: var(--light-blue); color: #1a365d; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(155, 194, 230, 0.4); }
+
+        /* Content */
+        .content-area { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            min-width: 0; 
+            overflow: hidden; 
+        }
+        
+        .card { 
+            background-color: var(--card-bg); 
+            border-radius: 12px; 
+            padding: 20px 25px; 
+            box-shadow: 0 2px 15px rgba(0,0,0,0.04); 
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex: 1; 
+            overflow: hidden; 
+        }
+        
+        /* Table Headers & Buttons */
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; flex-shrink: 0;}
+        .card-title-group { display: flex; flex-direction: column; }
+        .card-title { font-size: 18px; font-weight: 600; color: var(--text-main); }
+        .cycle-badge { background-color: #e8f0fe; color: #1a73e8; padding: 4px 10px; border-radius: 4px; font-size: 13px; font-weight: 500; margin-top: 5px; display: inline-block;}
+        
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: var(--transition); font-size: 14px; }
+        .btn-primary { background-color: var(--primary-blue); color: white; }
+        .btn-primary:hover { background-color: #357abd; }
+        .btn-action { background-color: #27ae60; color: white; padding: 6px 12px; font-size: 13px; }
+        .btn-action:hover { background-color: #2ecc71; }
+        .btn-print { background-color: #475569; color: white; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-print:hover { background-color: #334155; }
+        
+        /* Table Logic */
+        .table-responsive { 
+            flex: 1; 
+            overflow: auto; 
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        
+        th { 
+            background-color: #f8fafc; 
+            font-weight: 600; 
+            color: var(--text-muted); 
+            font-size: 13px; 
+            text-transform: uppercase;
+            position: sticky; 
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        tbody tr:hover { background-color: #f1f5f9; }
+
+        /* Status Count Badges */
+        .count-badge { 
+            display: inline-block; 
+            padding: 4px 12px; 
+            border-radius: 4px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            text-align: center; 
+            min-width: 60px; 
+        }
+        .cb-work { background-color: #e3fcec; color: #27ae60; }
+        .cb-off { background-color: #f1f5f9; color: #64748b; }
+        .cb-ot { background-color: #ffedd5; color: #c2410c; }
+        .cb-ph { background-color: #fef08a; color: #854d0e; }
+        .cb-al { background-color: #e0e7ff; color: #4338ca; }
+        .cb-absent { background-color: #fee2e2; color: #dc2626; }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background-color: var(--card-bg); padding: 25px; border-radius: 12px; width: 100%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0; }
+        .close-btn { font-size: 24px; cursor: pointer; color: var(--text-muted); }
+        .form-group { margin-bottom: 15px; flex-shrink: 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; flex-shrink: 0; }
+        .btn-cancel { background-color: #e1e4e8; color: var(--text-main); }
+        
+        /* New scrollable container for the month's days inside modal */
+        .month-days-container {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            background-color: #fafbfc;
+        }
+        .day-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        .day-row:last-child { border-bottom: none; }
+        .day-row select { width: 55%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; outline: none; }
+        .day-row .day-info { display: flex; flex-direction: column; }
+        .day-row .date-text { font-weight: 600; font-size: 14px; }
+        .day-row .day-name { font-size: 12px; color: var(--text-muted); }
+        .day-row.weekend-row { background-color: #f1f5f9; } /* Highlight weekends slightly */
+
+        /* Mobile Layout */
+        @media (max-width: 992px) { 
+            body { overflow: auto; height: auto; } 
+            .app-container { height: auto; min-height: 100vh; }
+            .main-workspace { flex-direction: column; overflow: visible; height: auto;} 
+            .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding-bottom: 5px;} 
+            .card { flex: none; height: auto; }
+            .table-responsive { overflow: auto; max-height: 600px; }
+        }
+
+        /* --- Print Mode Styling --- */
+        @media print {
+            body { background: #ffffff; color: #000000; overflow: auto; height: auto; }
+            .top-header, .sidebar, .btn, .modal, th:last-child, td:last-child { display: none !important; }
+            .app-container, .main-workspace { height: auto; overflow: visible; display: block; }
+            .main-workspace { padding: 0; margin: 0; width: 100%; max-width: 100%; }
+            .card { border: none; box-shadow: none; padding: 0; overflow: visible; display: block; }
+            .table-responsive { overflow: visible; border: none; }
+            .card-header { margin-bottom: 15px; border-bottom: 2px solid #333333; padding-bottom: 10px; }
+            .cycle-badge { border: 1px solid #999999; background-color: transparent !important; color: #000000 !important; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { position: static; background-color: #f2f2f2 !important; font-weight: bold; }
+            th, td { border: 1px solid #cccccc !important; padding: 8px 12px; color: #000000 !important; }
+            .count-badge { background-color: transparent !important; color: #000000 !important; padding: 0; font-weight: normal; }
+        }
+    </style>
+    <style>
+        /* Header User Profile Layout */
+.top-header { 
+    background-color: var(--card-bg); 
+    padding: 20px 30px; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+.user-profile-bar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-info {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.user-role-badge {
+    background-color: var(--light-blue);
+    color: #1a365d;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+.logout-btn { 
+    background-color: #e74c3c; 
+    color: white; 
+    border: none; 
+    padding: 8px 16px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    transition: var(--transition); 
+}
+
+.logout-btn:hover { 
+    background-color: #c0392b; 
+}
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header class="top-header">
+    <h1>BUDDLEPLUS DASHBOARD</h1>
+    
+    <div class="user-profile-bar">
+        <div class="user-info">
+            👤 <span id="currentUserName">Loading...</span>
+            <span id="currentUserRole" class="user-role-badge">Role</span>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+</header>
+
+        <div class="main-workspace">
+            <nav class="sidebar">
+                <a href="index.html" class="nav-item">DASHBOARD</a>
+                <a href="HRM.html" class="nav-item">HUMAN RESOURCES</a>
+                <a href="Operation.html" class="nav-item active">OPERATION</a>
+                <a href="finance.html" class="nav-item">FINANCE</a>
+                <a href="report.html" class="nav-item">REPORT</a>
+                <a href="user.html" class="nav-item">USER</a>
+            </nav>
+
+            <main class="content-area">
+                
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">Monthly Attendance Summary</h2>
+                            <span class="cycle-badge" id="cycleDisplay">Current Cycle: Loading...</span>
+                        </div>
+                        <button class="btn btn-print" onclick="window.print()">
+                            🖨️ Print Report
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Emp ID</th>
+                                    <th>English Name</th>
+                                    <th>Department</th>
+                                    <th>Working Day</th>
+                                    <th>Off Day</th>
+                                    <th>OT</th>
+                                    <th>PH</th>
+                                    <th>AL</th>
+                                    <th>Absence</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Modified Modal for Updating the WHOLE MONTH -->
+    <div id="attendanceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="card-title">Update Monthly Attendance</h2>
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+            </div>
+            
+            <form id="attendanceForm" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+                <input type="hidden" id="selectedEmpId">
+                
+                <div class="form-group">
+                    <label>Employee Name</label>
+                    <input type="text" id="displayEmpName" readonly style="background-color: #f8fafc; cursor: not-allowed;">
+                </div>
+                
+                <!-- Scrollable list of all days in the cycle -->
+                <div class="month-days-container" id="monthDaysContainer">
+                    <!-- JavaScript will generate the rows here -->
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Month</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+   <script>
+        // --- 1. Load Active Employees from HRM ---
+        const allEmployees = JSON.parse(localStorage.getItem('employeeData')) || [];
+        const employees = allEmployees
+        .filter(emp => emp.status === "Active")
+        .map(emp => ({
+        id: emp.id || emp.empId || 'N/A',
+        englishName: emp.englishName || emp.name || 'Unknown',
+        position: emp.position || 'Unassigned',
+        // Add this line: ensure you have a valid date format (YYYY-MM-DD)
+        joinedDate: emp.joinedDate || '1900-01-01' 
+        }));
+
+        // --- 2. Persistent Daily Attendance Logs ---
+        let attendanceLog = JSON.parse(localStorage.getItem('dailyAttendanceLogs')) || [];
+
+        // --- Helper Function: Local Date Formatter ---
+        function formatYMD(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        // --- 3. Date & Cycle Calculation Logic (24th to 23rd) ---
+        let cycleStartData, cycleEndData;
+
+        function calculateCycle() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth();
+            const date = today.getDate();
+
+            if (date >= 24) {
+                cycleStartData = new Date(year, month, 24);
+                cycleEndData = new Date(year, month + 1, 23);
+            } else {
+                cycleStartData = new Date(year, month - 1, 24);
+                cycleEndData = new Date(year, month, 23);
+            }
+
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            const startStr = cycleStartData.toLocaleDateString('en-US', options);
+            const endStr = cycleEndData.toLocaleDateString('en-US', options);
+            
+            document.getElementById('cycleDisplay').innerText = `Cycle: ${startStr} — ${endStr}`;
+        }
+
+        // --- 4. Render the Summary Table ---
+        // --- 4. Render the Summary Table ---
+function renderAttendanceTable() {
+    const tbody = document.getElementById('attendanceTableBody');
+    tbody.innerHTML = ''; 
+
+    if (employees.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center;">No active employees found.</td></tr>`;
+        return;
+    }
+
+    const startISO = formatYMD(cycleStartData);
+    const endISO = formatYMD(cycleEndData);
+
+    employees.forEach(emp => {
+        let counts = { 
+            "Working Day": 0, "Off Day": 0, "Overtime": 0, 
+            "PH": 0, "AL": 0, "Absence": 0 
+        };
+
+        const empLogs = attendanceLog.filter(log => 
+            log.empId === emp.id && 
+            log.date >= startISO && 
+            log.date <= endISO &&
+            // NEW FILTER: Ignore logs before joining date
+            log.date >= emp.joinedDate 
+        );
+
+        empLogs.forEach(log => {
+            if (counts[log.status] !== undefined) counts[log.status]++;
+        });
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${emp.id}</strong></td>
+            <td>${emp.englishName}</td>
+            <td>${emp.position}</td>
+            <td><span class="count-badge cb-work">${counts["Working Day"]}</span></td>
+            <td><span class="count-badge cb-off">${counts["Off Day"]}</span></td>
+            <td><span class="count-badge cb-ot">${counts["Overtime"]}</span></td>
+            <td><span class="count-badge cb-ph">${counts["PH"]}</span></td>
+            <td><span class="count-badge cb-al">${counts["AL"]}</span></td>
+            <td><span class="count-badge cb-absent">${counts["Absence"]}</span></td>
+            <td>
+                <button class="btn btn-action" onclick="openModal('${emp.id}', '${emp.englishName}', '${emp.joinedDate}')">
+                    Log Month
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+        // --- 5. Sync Aggregated Data to Finance ---
+        function syncToFinance() {
+            let attendanceRecords = {};
+            const startISO = formatYMD(cycleStartData);
+            const endISO = formatYMD(cycleEndData);
+
+            employees.forEach(emp => {
+                const empLogs = attendanceLog.filter(log => log.empId === emp.id && log.date >= startISO && log.date <= endISO);
+                let daysWorked = 0;
+                let overtime = 0; 
+                
+                empLogs.forEach(log => {
+                    if(log.status === "Working Day") daysWorked++;
+                    if(log.status === "Overtime") overtime++;
+                });
+
+                attendanceRecords[emp.id] = {
+                    daysWorked: daysWorked,
+                    overtime: overtime
+                };
+            });
+
+            localStorage.setItem('attendanceData', JSON.stringify(attendanceRecords));
+        }
+
+        // --- 6. Modal Controls & MONTHLY Form Generation ---
+        const modal = document.getElementById('attendanceModal');
+        const form = document.getElementById('attendanceForm');
+        
+        // Define all valid statuses
+        const statusOptions = ["Working Day", "Overtime", "Off Day", "PH", "AL", "Absence"];
+
+        // Update the function call in your HTML button (line 267 above):
+// onclick="openModal('${emp.id}', '${emp.englishName}', '${emp.joinedDate}')"
+
+function openModal(empId, empName, joinedDate) {
+    modal.style.display = 'flex';
+    document.getElementById('selectedEmpId').value = empId;
+    document.getElementById('displayEmpName').value = empName;
+    
+    const container = document.getElementById('monthDaysContainer');
+    container.innerHTML = ''; 
+    
+    let currentDate = new Date(cycleStartData);
+    const endDate = new Date(cycleEndData);
+    
+    while (currentDate <= endDate) {
+        const dateStr = formatYMD(currentDate);
+        const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+        
+        // Disable editing if date is before joinedDate
+        const isBeforeJoin = dateStr < joinedDate;
+        
+        const existingLog = attendanceLog.find(log => log.empId === empId && log.date === dateStr);
+        let currentStatus = existingLog ? existingLog.status : (currentDate.getDay() === 0 ? "Off Day" : "Working Day");
+
+        const optionsHtml = statusOptions.map(status => {
+            return `<option value="${status}" ${status === currentStatus ? 'selected' : ''}>${status}</option>`;
+        }).join('');
+        
+        container.innerHTML += `
+            <div class="day-row ${isBeforeJoin ? 'disabled-row' : ''}">
+                <div class="day-info">
+                    <span class="date-text">${dateStr} ${isBeforeJoin ? '(Pre-Join)' : ''}</span>
+                    <span class="day-name">${dayName}</span>
+                </div>
+                <select class="daily-status-select" data-date="${dateStr}" ${isBeforeJoin ? 'disabled' : ''}>
+                    ${isBeforeJoin ? '<option>N/A</option>' : optionsHtml}
+                </select>
+            </div>
+        `;
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+}
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        // Handle the submission of the entire month
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const empId = document.getElementById('selectedEmpId').value;
+            const selects = document.querySelectorAll('.daily-status-select');
+            
+            // Loop over every generated dropdown in the modal
+            selects.forEach(select => {
+                const date = select.getAttribute('data-date');
+                const status = select.value;
+                
+                const existingRecordIndex = attendanceLog.findIndex(log => log.empId === empId && log.date === date);
+
+                if (existingRecordIndex !== -1) {
+                    // Update existing
+                    attendanceLog[existingRecordIndex].status = status;
+                } else {
+                    // Add new record
+                    attendanceLog.push({ empId, date, status });
+                }
+            });
+
+            // Save, Sync, and Re-render
+            localStorage.setItem('dailyAttendanceLogs', JSON.stringify(attendanceLog));
+            closeModal();
+            renderAttendanceTable();
+            syncToFinance(); 
+            
+            alert(`Monthly attendance saved successfully!`);
+        });
+
+        // --- 7. Initialize Everything on Load ---
+        window.onload = function() {
+            calculateCycle();
+            renderAttendanceTable();
+            syncToFinance(); 
+        };
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+        
+        
+    </script>
+    <!-- REQUIRED AUTH GUARD SCRIPT -->
+<script>
+    (function checkAccess() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        
+        // 1. If not logged in at all, redirect to login page
+        if (!currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // 2. Identify the current page being requested
+        const path = window.location.pathname;
+        const currentPage = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+
+        // 3. Define limits based on roles
+        const role = currentUser.role;
+        let allowed = true;
+
+        if (role === 'HR' && !['HRM.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Finance' && !['finance.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Operation' && !['Operation.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        }
+
+        // 4. Kick out if not allowed
+        if (!allowed) {
+            alert("Access Denied: Your assigned role does not have permission to view this module.");
+            window.location.href = 'index.html';
+        }
+    })();
+</script>
+<script>
+    // --- UNIVERSAL AUTH & NAVIGATION GUARD ---
+    (function initAuthGuard() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+        // 1. Redirect if not logged in
+        if (!currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // 2. Identify current page
+        const path = window.location.pathname;
+        const currentPage = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+
+        // 3. Page Access Matrix
+        const role = currentUser.role;
+        let allowed = true;
+
+        if (role === 'HR' && !['HRM.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Finance' && !['finance.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Operation' && !['Operation.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role !== 'Admin' && currentPage === 'user.html') {
+            allowed = false;
+        }
+
+        // 4. Kick out if role is restricted
+        if (!allowed) {
+            alert("Access Denied: Your account role (" + role + ") does not have permission to view this page.");
+            window.location.href = 'index.html';
+            return;
+        }
+
+        // 5. Update Header with Current User Info
+        document.addEventListener("DOMContentLoaded", function() {
+            const nameElem = document.getElementById('currentUserName');
+            const roleElem = document.getElementById('currentUserRole');
+            
+            if (nameElem) nameElem.innerText = currentUser.username;
+            if (roleElem) roleElem.innerText = currentUser.role;
+        });
+    })();
+
+    // --- LOGOUT FUNCTION ---
+    function logout() {
+        if (confirm("Are you sure you want to log out?")) {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+    }
+</script>
+
+</body>
+</html>

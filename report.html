@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reports - BuddlePlus Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-blue: #4a90e2;
+      --bg-color: #f4f7f6;
+      --card-bg: #ffffff;
+      --text-main: #333333;
+      --text-muted: #666666;
+      --border-color: #e1e4e8;
+      --sidebar-width: 240px;
+      --transition: all 0.3s ease;
+    }
+
+    * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { margin: 0; background-color: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; }
+
+    .app-container { display: flex; flex-direction: column; height: 100vh; }
+    
+    /* Header */
+    .top-header { background-color: var(--card-bg); padding: 20px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .top-header h1 { font-size: 20px; font-weight: 700; color: var(--primary-blue); margin: 0; }
+
+    /* Layout */
+    .main-workspace { display: flex; flex: 1; padding: 20px; gap: 20px; overflow: hidden; }
+    
+    /* Sidebar */
+    .sidebar { width: var(--sidebar-width); display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+    .nav-item { background: var(--card-bg); padding: 15px 20px; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-weight: 600; transition: var(--transition); }
+    .nav-item:hover { background: #eef5ff; color: var(--primary-blue); }
+    .nav-item.active { background: #9bc2e6; color: #1a365d; }
+
+    /* Content Area */
+    .content-area { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding-right: 10px; }
+    .card { background: var(--card-bg); border-radius: 12px; padding: 25px; border: 1px solid var(--border-color); box-shadow: 0 2px 15px rgba(0,0,0,0.04); }
+    .card-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; border-bottom: 2px solid var(--bg-color); padding-bottom: 10px; }
+
+    /* Controls & Buttons */
+    .controls { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+    .input, .select { padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; }
+    
+    .btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: var(--transition); font-size: 14px; }
+    .btn-primary { background: var(--primary-blue); color: #fff; }
+    .btn-primary:hover { background: #357abd; }
+    .btn-secondary { background: var(--border-color); color: var(--text-main); }
+    .btn-secondary:hover { background: #d1d5db; }
+
+    /* Table & Summary */
+    .grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+    .preview { border: 1px solid var(--border-color); border-radius: 8px; overflow: auto; max-height: 400px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f9fafb; padding: 12px; text-align: left; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; }
+    td { padding: 12px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+    
+    .summary-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .stat { background: #f9fbff; padding: 15px; border-radius: 8px; border: 1px solid #eef5ff; }
+    .stat strong { display: block; color: var(--text-muted); font-size: 12px; text-transform: uppercase; margin-bottom: 5px; }
+    
+    @media(max-width:1024px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+
+  <style>
+  /* --- Payslip Print Styles --- */
+    @media print {
+      body * { visibility: hidden; }
+      #printablePayslip, #printablePayslip * { visibility: visible; }
+      #printablePayslip { 
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+        width: 100%; 
+        display: block !important; 
+        padding: 20px;
+      }
+      .app-container { display: none; } /* Hide dashboard entirely */
+    }
+
+    #printablePayslip { display: none; background: #fff; color: #000; font-family: 'Inter', sans-serif; }
+    .payslip-box { max-width: 800px; margin: 0 auto; border: 1px solid #000; padding: 30px; }
+    .payslip-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+    .payslip-header h2 { margin: 0; font-size: 22px; font-weight: 700; text-transform: uppercase; }
+    .payslip-header p { margin: 5px 0 0 0; font-size: 14px; color: #555; }
+    
+    .ps-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; font-size: 14px; }
+    .ps-info span { font-weight: 600; display: inline-block; width: 120px; }
+    
+    .ps-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .ps-table th, .ps-table td { border: 1px solid #000; padding: 10px; text-align: left; font-size: 14px; }
+    .ps-table th { background-color: #f0f0f0; }
+    
+    .ps-totals { display: flex; justify-content: flex-end; margin-top: 10px; }
+    .ps-net-pay { font-size: 18px; font-weight: 700; border-top: 2px solid #000; padding-top: 10px; width: 300px; display: flex; justify-content: space-between;}
+    
+    .ps-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; margin-top: 50px; text-align: center; font-size: 14px; }
+    .ps-signatures div { border-top: 1px solid #000; padding-top: 10px; }
+    </style>
+    <style>
+      /* Header User Profile Layout */
+.top-header { 
+    background-color: var(--card-bg); 
+    padding: 20px 30px; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+.user-profile-bar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-info {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.user-role-badge {
+    background-color: var(--light-blue);
+    color: #1a365d;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+.logout-btn { 
+    background-color: #e74c3c; 
+    color: white; 
+    border: none; 
+    padding: 8px 16px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    transition: var(--transition); 
+}
+
+.logout-btn:hover { 
+    background-color: #c0392b; 
+}
+    </style>
+</head>
+<body>
+  <!-- Hidden Payslip Template -->
+<div id="printablePayslip">
+  <div class="payslip-box">
+    <div class="payslip-header">
+      <h2>BUDDLEPLUS FACILITIES SOLUTION MANAGEMENT</h2>
+      <p>Official Employee Payslip</p>
+    </div>
+    
+    <div class="ps-info">
+      <div><span>Employee ID:</span> <span id="ps-emp-id" style="font-weight:normal;"></span></div>
+      <div><span>Date:</span> <span id="ps-date" style="font-weight:normal;"></span></div>
+      <div><span>Employee Name:</span> <span id="ps-emp-name" style="font-weight:normal;"></span></div>
+      <div><span>Department:</span> <span id="ps-dept" style="font-weight:normal;"></span></div>
+      <div><span>Position:</span> <span id="ps-position" style="font-weight:normal;"></span></div>
+    </div>
+
+    <table class="ps-table">
+      <thead>
+        <tr>
+          <th style="width: 50%;">Earnings</th>
+          <th style="width: 50%;">Deductions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            Basic Salary: $<span id="ps-basic">0.00</span><br>
+            Paid Days: <span id="ps-days">0</span> days<br>
+            OT Bonus: $<span id="ps-ot">0.00</span><br>
+            Allowances/Bonus: $<span id="ps-allowance">0.00</span>
+          </td>
+          <td>
+            NSSF Contribution: $<span id="ps-nssf">0.00</span><br>
+            Salary Tax: $<span id="ps-tax">0.00</span><br>
+            Manual Deductions/Loans: $<span id="ps-deductions">0.00</span>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Gross Earnings: $<span id="ps-gross">0.00</span></strong></td>
+          <td><strong>Total Deductions: $<span id="ps-total-deduct">0.00</span></strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="ps-totals">
+      <div class="ps-net-pay">
+        <span>NET PAY:</span>
+        <span>$<span id="ps-net">0.00</span></span>
+      </div>
+    </div>
+
+    <div class="ps-signatures">
+      <div>Employer Signature & Stamp</div>
+      <div>Employee Signature</div>
+    </div>
+  </div>
+</div>
+
+  <div class="app-container">
+    <header class="top-header">
+    <h1>BUDDLEPLUS DASHBOARD</h1>
+    
+    <div class="user-profile-bar">
+        <div class="user-info">
+            👤 <span id="currentUserName">Loading...</span>
+            <span id="currentUserRole" class="user-role-badge">Role</span>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+</header>
+
+    <div class="main-workspace">
+      <nav class="sidebar">
+        <a href="index.html" class="nav-item">DASHBOARD</a>
+        <a href="HRM.html" class="nav-item">HUMAN RESOURCES</a>
+        <a href="Operation.html" class="nav-item">OPERATION</a>
+        <a href="finance.html" class="nav-item">FINANCE</a>
+        <a href="report.html" class="nav-item active">REPORT</a>
+        <a href="user.html" class="nav-item">USER</a>
+      </nav>
+
+      <main class="content-area">
+        <div class="card">
+          <div class="card-title">Report Extraction Controls</div>
+          <div class="controls">
+            <select id="reportType" class="select">
+              <option value="BankDetails">1. Bank Detail Report</option>
+              <option value="EmployeeList">2. Employee Detail Report</option>
+              <option value="MonthlyPayroll">3. Payroll Detail Report</option>
+            </select>
+            
+            <!-- New Bank Dropdown Filter -->
+            <select id="bankTypeFilter" class="select" style="display: none;">
+              <option value="">All Banks</option>
+            </select>
+
+            <input id="fromDate" class="input" type="date" title="Start Date" />
+            <input id="toDate" class="input" type="date" title="End Date" />
+            <input id="searchText" class="input" placeholder="Search (Name, ID, Bank...)" />
+            
+            <button id="previewBtn" class="btn btn-secondary">Preview</button>
+            <button id="clearFilters" class="btn btn-secondary">Clear</button>
+
+            <div style="margin-left:auto; display:flex; gap:8px;">
+              <button id="exportFiltered" class="btn btn-primary">Export CSV File</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <div class="card-title">Data Preview</div>
+            <div id="preview" class="preview">
+              <table id="previewTable">
+                <thead id="previewHead"></thead>
+                <tbody id="previewBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Report Summary</div>
+            <div id="summaryArea" class="summary-grid">No data selected</div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+<script>
+    // --- 1. Load Data from Storage ---
+    const employees = JSON.parse(localStorage.getItem('employeeData')) || [];
+    const attendanceLogs = JSON.parse(localStorage.getItem('dailyAttendanceLogs')) || [];
+    const deductions = JSON.parse(localStorage.getItem('deductionData')) || [];
+    const allowances = JSON.parse(localStorage.getItem('allowanceData')) || [];
+
+    // --- UI Elements ---
+    const reportType = document.getElementById('reportType');
+    const bankTypeFilter = document.getElementById('bankTypeFilter');
+    const fromDate = document.getElementById('fromDate');
+    const toDate = document.getElementById('toDate');
+    const searchText = document.getElementById('searchText');
+    const previewBtn = document.getElementById('previewBtn');
+    const clearFilters = document.getElementById('clearFilters');
+    const exportBtn = document.getElementById('exportFiltered');
+    
+    const tableHead = document.getElementById('previewHead');
+    const tableBody = document.getElementById('previewBody');
+    const summaryArea = document.getElementById('summaryArea');
+
+    // --- 2. Payroll Calculation Helpers (Matching Finance Page) ---
+    function calcNSSF(salary) {
+        let nssf = salary * 0.008;
+        return nssf > 10.40 ? 10.40 : nssf;
+    }
+
+    function calcTax(salary, type) {
+        if (type === 'Net' || type === 'net') return 0;
+        if (salary <= 300) return 0;
+        if (salary <= 500) return (salary - 300) * 0.05;
+        return (200 * 0.05) + ((salary - 500) * 0.10);
+    }
+
+    function generateFullPayrollData() {
+        return employees.map(e => {
+            // Filter logs/deductions/allowances by Date if selected
+            let empLogs = attendanceLogs.filter(log => log.empId == e.id);
+            let empDeductions = deductions.filter(d => d.empId == e.id);
+            let empAllowances = allowances.filter(a => a.empId == e.id);
+
+            const start = fromDate.value ? new Date(fromDate.value) : null;
+            const end = toDate.value ? new Date(toDate.value) : null;
+
+            if (start && end) {
+                empLogs = empLogs.filter(log => new Date(log.date) >= start && new Date(log.date) <= end);
+                empDeductions = empDeductions.filter(d => new Date(d.date) >= start && new Date(d.date) <= end);
+                empAllowances = empAllowances.filter(a => new Date(a.date) >= start && new Date(a.date) <= end);
+            }
+
+            const manualDeduction = empDeductions.reduce((sum, d) => sum + parseFloat(d.monthlyDeduction || 0), 0);
+            const totalAllowances = empAllowances.reduce((sum, a) => sum + parseFloat(a.amount || 0), 0);
+
+            const daysWorked = empLogs.filter(log => log.status === "Working Day").length;
+            const daysPH = empLogs.filter(log => log.status === "PH").length;
+            const daysAL = empLogs.filter(log => log.status === "AL").length;
+            const daysOT = empLogs.filter(log => log.status === "Overtime" || log.status === "OT").length;
+            
+            const totalPaidDays = daysWorked + daysPH + daysAL + daysOT;
+            const otBonusPay = daysOT * 10;
+            const basic = parseFloat(e.basicSalary) || 0;
+            const dailyRate = basic / 26;
+
+            const grossPay = (totalPaidDays * dailyRate) + otBonusPay + totalAllowances;
+            const nssf = calcNSSF(grossPay);
+            const tax = calcTax(grossPay, e.salaryType);
+            const netPay = grossPay - (manualDeduction + nssf + tax);
+
+            return {
+                ...e,
+                totalPaidDays,
+                otBonusPay,
+                totalAllowances,
+                manualDeduction,
+                grossPay,
+                nssf,
+                tax,
+                netPay
+            };
+        });
+    }
+
+    // --- 3. UI and Filter Logic ---
+    function initBankDropdown() {
+        const banks = [...new Set(employees.map(e => e.bankType).filter(b => b))];
+        bankTypeFilter.innerHTML = '<option value="">All Banks</option>';
+        banks.forEach(bank => {
+            bankTypeFilter.innerHTML += `<option value="${bank}">${bank}</option>`;
+        });
+    }
+
+    reportType.addEventListener('change', () => {
+        bankTypeFilter.style.display = reportType.value === 'BankDetails' ? 'inline-block' : 'none';
+        // Auto-run report when changing type
+        generateReport();
+    });
+
+    // --- 4. Report Generators ---
+    function generateReport() {
+        const type = reportType.value;
+        const search = searchText.value.toLowerCase();
+        let data = [];
+
+        if (type === 'BankDetails' || type === 'MonthlyPayroll') {
+            data = generateFullPayrollData();
+        } else {
+            data = [...employees];
+            // Apply Date filter to joinDate for Employee List
+            const start = fromDate.value ? new Date(fromDate.value) : null;
+            const end = toDate.value ? new Date(toDate.value) : null;
+            if (start && end) {
+                data = data.filter(e => {
+                    if (!e.joinDate) return false;
+                    const jd = new Date(e.joinDate);
+                    return jd >= start && jd <= end;
+                });
+            }
+        }
+
+        // Apply Search Filter
+        if (search) {
+            data = data.filter(item => 
+                (item.englishName || '').toLowerCase().includes(search) || 
+                (item.id || '').toLowerCase().includes(search) ||
+                (item.bankType || '').toLowerCase().includes(search) ||
+                (item.department || '').toLowerCase().includes(search)
+            );
+        }
+
+        // Render based on type
+        if (type === 'BankDetails') renderBankReport(data);
+        if (type === 'EmployeeList') renderEmployeeReport(data);
+        if (type === 'MonthlyPayroll') renderPayrollReport(data);
+    }
+
+   function renderBankReport(data) {
+        const bankFilter = bankTypeFilter.value;
+        if (bankFilter) {
+            data = data.filter(e => e.bankType === bankFilter);
+        }
+        
+        // Only show Active employees with a Net Pay > 0 for bank transfer
+        data = data.filter(e => e.status === "Active" && e.netPay > 0);
+
+        // Updated Header: Changed "Account Name" to "Bank Name"
+        tableHead.innerHTML = `<tr><th>ID</th><th>English Name</th><th>Department</th><th>Bank Type</th><th>Account #</th><th>Bank Name</th><th>Transfer Amount</th></tr>`;
+        
+        // Updated Body: Changed e.bankdisplay to e.bankName
+        tableBody.innerHTML = data.map(e => `
+            <tr>
+                <td>${e.id}</td>
+                <td>${e.englishName || '-'}</td>
+                <td>${e.department || '-'}</td>
+                <td>${e.bankType || '-'}</td>
+                <td>${e.bankNumber || '-'}</td>
+                <td>${e.bankName || '-'}</td>
+                <td><strong>$${e.netPay.toFixed(2)}</strong></td>
+            </tr>
+        `).join('');
+
+        const totalTransfer = data.reduce((sum, e) => sum + e.netPay, 0);
+        summaryArea.innerHTML = `
+            <div class="stat"><strong>Total Accounts</strong> <span>${data.length}</span></div>
+            <div class="stat"><strong>Total Transfer Amount</strong> <span style="color:var(--primary-blue); font-weight:bold; font-size:18px;">$${totalTransfer.toFixed(2)}</span></div>
+        `;
+    }
+
+    function renderEmployeeReport(data) {
+        // Updated Table Header with new columns
+        tableHead.innerHTML = `<tr>
+            <th>ID</th>
+            <th>NSSF ID</th>
+            <th>National ID</th>
+            <th>Khmer Name</th>
+            <th>English Name</th>
+            <th>Date of Birth</th>
+            <th>Sex</th>
+            <th>Position</th>
+            <th>Dept</th>
+            <th>Join Date</th>
+            <th>Total Salary</th>
+            <th>Status</th>
+        </tr>`;
+
+        // Updated Table Body pulling the new data keys
+        tableBody.innerHTML = data.map(e => `
+            <tr>
+                <td>${e.id || '-'}</td>
+                <td>${e.nssfId || e.nssfID || e.nssf || '-'}</td>
+                <td>${e.nationalId || e.nationalID || e.nationId || '-'}</td>
+                <td>${e.khmerName || '-'}</td>
+                <td>${e.englishName || '-'}</td>
+                <td>${e.dob || e.dateOfBirth || '-'}</td>
+                <td>${e.sex || '-'}</td>
+                <td>${e.position || '-'}</td>
+                <td>${e.department || '-'}</td>
+                <td>${e.joinDate || '-'}</td>
+                <!-- Fixed string conversion issue here with parseFloat() -->
+                <td>$${parseFloat(e.basicSalary || 0).toFixed(2)}</td>
+                <td><span style="color:${e.status === 'Active' ? 'green' : 'red'}">${e.status || '-'}</span></td>
+            </tr>
+        `).join('');
+
+        // Summary Widget Updates
+        const activeCount = data.filter(e => e.status === "Active").length;
+        summaryArea.innerHTML = `
+            <div class="stat"><strong>Total Employees (Filtered)</strong> <span>${data.length}</span></div>
+            <div class="stat"><strong>Active Staff</strong> <span style="color:green; font-weight:bold;">${activeCount}</span></div>
+        `;
+    }
+
+    // We need a global variable to temporarily store payroll data for printing
+    let currentPayrollData = []; 
+
+    function renderPayrollReport(data) {
+        currentPayrollData = data; // Save data globally so the print function can access it
+
+        tableHead.innerHTML = `<tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Basic</th>
+            <th>Allowances</th>
+            <th>Gross</th>
+            <th>Deductions</th>
+            <th>Net Pay</th>
+            <th>Action</th>
+        </tr>`;
+
+        tableBody.innerHTML = data.map(e => `
+            <tr>
+                <td>${e.id}</td>
+                <td>${e.englishName || e.khmerName || '-'}</td>
+                <td>$${parseFloat(e.basicSalary||0).toFixed(2)}</td>
+                <td style="color:green;">+$${e.totalAllowances.toFixed(2)}</td>
+                <td>$${e.grossPay.toFixed(2)}</td>
+                <td style="color:red;">-$${(e.manualDeduction + e.nssf + e.tax).toFixed(2)}</td>
+                <td style="color:var(--primary-blue); font-weight:bold;">$${e.netPay.toFixed(2)}</td>
+                <td>
+                    <button class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;" onclick="printPayslip('${e.id}')">Print Payslip</button>
+                </td>
+            </tr>
+        `).join('');
+
+        const totalNet = data.reduce((sum, e) => sum + e.netPay, 0);
+        const totalGross = data.reduce((sum, e) => sum + e.grossPay, 0);
+        
+        summaryArea.innerHTML = `
+            <div class="stat"><strong>Total Employees Processed</strong> <span>${data.length}</span></div>
+            <div class="stat"><strong>Total Gross Pay</strong> <span>$${totalGross.toFixed(2)}</span></div>
+            <div class="stat"><strong>Total Net Payout</strong> <span style="color:var(--primary-blue); font-weight:bold; font-size:18px;">$${totalNet.toFixed(2)}</span></div>
+        `;
+    }
+
+    // --- New Function to Print Payslip ---
+    function printPayslip(empId) {
+        // Find the specific employee in the generated payroll data
+        const emp = currentPayrollData.find(e => e.id == empId);
+        if(!emp) {
+            alert("Employee data not found.");
+            return;
+        }
+
+        // 1. Populate the hidden HTML template with the employee's data
+        document.getElementById('ps-emp-id').innerText = emp.id;
+        document.getElementById('ps-date').innerText = new Date().toLocaleDateString();
+        document.getElementById('ps-emp-name').innerText = emp.englishName || emp.khmerName || '-';
+        document.getElementById('ps-dept').innerText = emp.department || '-';
+        document.getElementById('ps-position').innerText = emp.position || '-';
+        
+        document.getElementById('ps-basic').innerText = parseFloat(emp.basicSalary || 0).toFixed(2);
+        document.getElementById('ps-days').innerText = emp.totalPaidDays || 0;
+        document.getElementById('ps-ot').innerText = (emp.otBonusPay || 0).toFixed(2);
+        document.getElementById('ps-allowance').innerText = (emp.totalAllowances || 0).toFixed(2);
+        
+        document.getElementById('ps-nssf').innerText = (emp.nssf || 0).toFixed(2);
+        document.getElementById('ps-tax').innerText = (emp.tax || 0).toFixed(2);
+        document.getElementById('ps-deductions').innerText = (emp.manualDeduction || 0).toFixed(2);
+        
+        document.getElementById('ps-gross').innerText = (emp.grossPay || 0).toFixed(2);
+        
+        const totalDeduct = (emp.nssf || 0) + (emp.tax || 0) + (emp.manualDeduction || 0);
+        document.getElementById('ps-total-deduct').innerText = totalDeduct.toFixed(2);
+        
+        document.getElementById('ps-net').innerText = (emp.netPay || 0).toFixed(2);
+
+        // 2. Temporarily show the template, trigger the print dialog, then hide it again
+        const payslipArea = document.getElementById('printablePayslip');
+        payslipArea.style.display = 'block';
+        window.print();
+        payslipArea.style.display = 'none';
+    }
+
+    // --- 5. Export to CSV ---
+    function exportCSV() {
+        let csv = [];
+        const rows = document.querySelectorAll("table tr");
+        
+        if(rows.length <= 1) {
+            alert("No data to export!");
+            return;
+        }
+
+        for (let i = 0; i < rows.length; i++) {
+            let row = [], cols = rows[i].querySelectorAll("td, th");
+            for (let j = 0; j < cols.length; j++) {
+                // Clean data: remove commas and dollar signs to prevent CSV breaking
+                let data = cols[j].innerText.replace(/,/g, "").replace(/\$/g, "");
+                row.push(`"${data}"`);
+            }
+            csv.push(row.join(","));
+        }
+
+        const csvString = csv.join("\n");
+        const filename = `${reportType.value}_Export_${new Date().toISOString().split('T')[0]}.csv`;
+        
+        const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // --- 6. Event Listeners ---
+    previewBtn.addEventListener('click', generateReport);
+    exportBtn.addEventListener('click', exportCSV);
+    
+    clearFilters.addEventListener('click', () => {
+        fromDate.value = '';
+        toDate.value = '';
+        searchText.value = '';
+        bankTypeFilter.value = '';
+        generateReport();
+    });
+
+    // Run on init
+    initBankDropdown();
+    generateReport();
+    bankTypeFilter.style.display = reportType.value === 'BankDetails' ? 'inline-block' : 'none';
+
+</script>
+ <!-- REQUIRED AUTH GUARD SCRIPT -->
+<script>
+    (function checkAccess() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        
+        // 1. If not logged in at all, redirect to login page
+        if (!currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // 2. Identify the current page being requested
+        const path = window.location.pathname;
+        const currentPage = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+
+        // 3. Define limits based on roles
+        const role = currentUser.role;
+        let allowed = true;
+
+        if (role === 'HR' && !['HRM.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Finance' && !['finance.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Operation' && !['Operation.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        }
+
+        // 4. Kick out if not allowed
+        if (!allowed) {
+            alert("Access Denied: Your assigned role does not have permission to view this module.");
+            window.location.href = 'index.html';
+        }
+    })();
+</script>
+<script>
+    // --- UNIVERSAL AUTH & NAVIGATION GUARD ---
+    (function initAuthGuard() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+        // 1. Redirect if not logged in
+        if (!currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // 2. Identify current page
+        const path = window.location.pathname;
+        const currentPage = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+
+        // 3. Page Access Matrix
+        const role = currentUser.role;
+        let allowed = true;
+
+        if (role === 'HR' && !['HRM.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Finance' && !['finance.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Operation' && !['Operation.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role !== 'Admin' && currentPage === 'user.html') {
+            allowed = false;
+        }
+
+        // 4. Kick out if role is restricted
+        if (!allowed) {
+            alert("Access Denied: Your account role (" + role + ") does not have permission to view this page.");
+            window.location.href = 'index.html';
+            return;
+        }
+
+        // 5. Update Header with Current User Info
+        document.addEventListener("DOMContentLoaded", function() {
+            const nameElem = document.getElementById('currentUserName');
+            const roleElem = document.getElementById('currentUserRole');
+            
+            if (nameElem) nameElem.innerText = currentUser.username;
+            if (roleElem) roleElem.innerText = currentUser.role;
+        });
+    })();
+
+    // --- LOGOUT FUNCTION ---
+    function logout() {
+        if (confirm("Are you sure you want to log out?")) {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+    }
+</script>
+</body>
+</html>

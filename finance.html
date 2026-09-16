@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- Standard Dashboard CSS --- */
+        :root {
+            --primary-blue: #4a90e2;
+            --light-blue: #9bc2e6;
+            --bg-color: #f4f7f6;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --card-bg: #ffffff;
+            --border-color: #e1e4e8;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; }
+
+        .app-container { display: flex; flex-direction: column; min-height: 100vh; }
+        .top-header { background-color: var(--card-bg); padding: 20px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .top-header h1 { font-size: 24px; font-weight: 700; color: var(--primary-blue); }
+        
+        .main-workspace { display: flex; flex: 1; padding: 20px; gap: 20px; max-width: 1600px; margin: 0 auto; width: 100%; }
+        
+        /* Sidebar */
+        .sidebar { width: 240px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+        .nav-item { background-color: var(--card-bg); padding: 15px 20px; border-radius: 8px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: var(--transition); border: 1px solid transparent; text-decoration: none; }
+        .nav-item:hover, .nav-item.active { background-color: var(--light-blue); color: #1a365d; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(155, 194, 230, 0.4); }
+
+        /* Content Area */
+        .content-area { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+        .card { background-color: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 2px 15px rgba(0,0,0,0.04); border: 1px solid var(--border-color); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card-title { font-size: 18px; font-weight: 600; color: var(--text-main); }
+        
+        /* Table & Buttons */
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background-color: #f8fafc; font-weight: 600; color: var(--text-muted); font-size: 13px; text-transform: uppercase; }
+        
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: var(--transition); font-size: 14px; }
+        .btn-primary { background-color: var(--primary-blue); color: white; }
+        .btn-add { background-color: #27ae60; color: white; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; margin-right: 5px; }
+        .btn-edit { background-color: #f39c12; color: white; }
+        .btn-delete { background-color: #e74c3c; color: white; }
+        
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background-color: var(--card-bg); padding: 30px; border-radius: 12px; width: 420px; max-height: 90vh; overflow-y: auto; }
+        input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid var(--border-color); border-radius: 6px; }
+        .search-box { margin-bottom: 5px; border: 1px solid var(--primary-blue); background: #f8fafc; }
+        
+        /* Layout Grid for smaller tables */
+        .split-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    </style>
+    <style>
+        /* Header User Profile Layout */
+.top-header { 
+    background-color: var(--card-bg); 
+    padding: 20px 30px; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+.user-profile-bar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-info {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.user-role-badge {
+    background-color: var(--light-blue);
+    color: #1a365d;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+.logout-btn { 
+    background-color: #e74c3c; 
+    color: white; 
+    border: none; 
+    padding: 8px 16px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    transition: var(--transition); 
+}
+
+.logout-btn:hover { 
+    background-color: #c0392b; 
+}
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header class="top-header">
+    <h1>BUDDLEPLUS DASHBOARD</h1>
+    
+    <div class="user-profile-bar">
+        <div class="user-info">
+            👤 <span id="currentUserName">Loading...</span>
+            <span id="currentUserRole" class="user-role-badge">Role</span>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+</header>
+
+    <div class="main-workspace">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <a href="index.html" class="nav-item">DASHBOARD</a>
+            <a href="HRM.html" class="nav-item">HUMAN RESOURCES</a>
+            <a href="Operation.html" class="nav-item">OPERATION</a>
+            <a href="finance.html" class="nav-item active">FINANCE</a>
+            <a href="report.html" class="nav-item">REPORT</a>
+            <a href="user.html" class="nav-item">USER</a>
+        </nav>
+
+        <main class="content-area">
+            
+            <div class="split-tables">
+                <!-- Deduction Manager Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Deductions & Loans</h2>
+                        <button class="btn btn-add" onclick="showModal()">+ New Deduction</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="deductionTable">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Department</th>
+                                    <th>Type</th>
+                                    <th>Amount / Mo.</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deductionBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Allowances & Bonuses Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Allowances & Bonuses</h2>
+                        <button class="btn btn-add" onclick="showAllowanceModal()" style="background-color: var(--primary-blue);">+ New Allowance</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="allowanceTable">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Department</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allowanceBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payroll Calculation Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Monthly Payroll Calculation</h2>
+                </div>
+                <div class="table-responsive">
+                    <table id="payrollTable">
+                        <thead>
+                            <tr>
+                                <th>Name & Dept</th>
+                                <th>Basic</th>
+                                <th>Type</th>
+                                <th>Daily Rate</th>
+                                <th>Paid Days</th>
+                                <th>OT Bonus ($10/d)</th>
+                                <th>Allowances</th>
+                                <th>Gross Pay</th>
+                                <th>NSSF</th>
+                                <th>Tax</th>
+                                <th>Loans/Fines</th>
+                                <th>Net Pay</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payrollBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Deduction Modal -->
+<div id="deductionModal" class="modal">
+    <div class="modal-content">
+        <h2 class="card-title" id="deductModalTitle">Add Manual Deduction</h2>
+        
+        <!-- Search Function -->
+        <input type="text" id="deductEmpSearch" class="search-box" placeholder="🔍 Search by name or department..." oninput="filterEmployees('deductEmpSearch', 'empSelect')">
+        <select id="empSelect"></select>
+        
+        <select id="deductType" onchange="toggleLoanFields()">
+            <option value="Loan">Salary Loan</option>
+            <option value="Shirt">Uniform/Shirt</option>
+            <option value="Fine">Penalty</option>
+        </select>
+        
+        <input type="number" id="deductAmount" placeholder="Total Amount ($)" step="0.01">
+        <input type="number" id="loanMonths" placeholder="Duration in Months (e.g. 3)" min="1">
+        
+        <div style="display:flex; gap: 10px; margin-top: 15px;">
+            <button class="btn" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveDeduction()">Save Deduction</button>
+        </div>
+    </div>
+</div>
+
+<!-- Allowance Modal -->
+<div id="allowanceModal" class="modal">
+    <div class="modal-content">
+        <h2 class="card-title" id="allowanceModalTitle">Add Allowance/Bonus</h2>
+        
+        <!-- Search Function -->
+        <input type="text" id="allowanceEmpSearch" class="search-box" placeholder="🔍 Search by name or department..." oninput="filterEmployees('allowanceEmpSearch', 'allowanceEmpSelect')">
+        <select id="allowanceEmpSelect"></select>
+        
+        <select id="allowanceType">
+            <option value="Bonus">Performance Bonus</option>
+            <option value="Transport">Transport Allowance</option>
+            <option value="Food">Food Allowance</option>
+            <option value="Other">Other Adjustments</option>
+        </select>
+        
+        <input type="number" id="allowanceAmount" placeholder="Total Amount ($)" step="0.01">
+        
+        <div style="display:flex; gap: 10px; margin-top: 15px;">
+            <button class="btn" onclick="closeAllowanceModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveAllowance()">Save Allowance</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. Load Employees from HRM ---
+    let employees = [];
+    const storedEmployees = JSON.parse(localStorage.getItem('employeeData')) || [];
+    
+    if (storedEmployees.length > 0) {
+        employees = storedEmployees
+            .filter(emp => emp.status === "Active")
+            .map(emp => ({
+                id: emp.id || emp.empId || 'N/A',
+                name: emp.englishName || emp.name || 'Unknown',
+                department: emp.department || 'N/A',
+                basicSalary: parseFloat(emp.salary || emp.basicSalary) || 0,
+                salaryType: emp.salaryType || 'Gross'
+            }));
+    } else {
+        // Fallback testing data 
+        employees = [
+            { id: 1, name: "Sok San", department: "Janitorial", basicSalary: 1500, salaryType: "Gross" },
+            { id: 2, name: "Chan Thy", department: "Administration", basicSalary: 800, salaryType: "Net" },
+            { id: 3, name: "Bora", department: "Operations", basicSalary: 450, salaryType: "Gross" }
+        ];
+    }
+
+    // --- 2. Load Data ---
+    let attendanceLogs = JSON.parse(localStorage.getItem('dailyAttendanceLogs')) || [];
+    let deductions = JSON.parse(localStorage.getItem('deductionData')) || [];
+    let allowances = JSON.parse(localStorage.getItem('allowanceData')) || [];
+
+    let currentEditDeductIndex = -1;
+    let currentEditAllowanceIndex = -1;
+
+    // --- 3. UI Toggles & SEARCH Logic ---
+    function filterEmployees(searchInputId, selectId) {
+        const searchText = document.getElementById(searchInputId).value.toLowerCase();
+        const selectElement = document.getElementById(selectId);
+        
+        selectElement.innerHTML = '';
+        let hasMatches = false;
+        
+        employees.forEach(e => {
+            const displayName = `${e.name} (${e.department})`;
+            if (displayName.toLowerCase().includes(searchText)) {
+                selectElement.innerHTML += `<option value="${e.id}">${displayName}</option>`;
+                hasMatches = true;
+            }
+        });
+
+        if (!hasMatches) {
+            selectElement.innerHTML = `<option disabled>No employees found...</option>`;
+        }
+    }
+
+    function resetDropdowns() {
+        document.getElementById('deductEmpSearch').value = '';
+        document.getElementById('allowanceEmpSearch').value = '';
+        filterEmployees('deductEmpSearch', 'empSelect');
+        filterEmployees('allowanceEmpSearch', 'allowanceEmpSelect');
+    }
+
+    function toggleLoanFields() {
+        const type = document.getElementById('deductType').value;
+        const monthsInput = document.getElementById('loanMonths');
+        const amountInput = document.getElementById('deductAmount');
+        
+        if (type === 'Loan') {
+            monthsInput.style.display = 'block';
+            amountInput.placeholder = "Total Loan Amount ($)";
+        } else {
+            monthsInput.style.display = 'none';
+            amountInput.placeholder = "Amount ($)";
+            monthsInput.value = "";
+        }
+    }
+
+    // --- 4. Tax & NSSF Formulas (Cambodia Rules) ---
+    function calcNSSF(salary) {
+        let nssf = salary * 0.008;
+        return nssf > 10.40 ? 10.40 : nssf;
+    }
+
+    function calcTax(salary, type) {
+        if (type === 'Net' || type === 'net') return 0;
+        if (salary <= 300) return 0;
+        if (salary <= 500) return (salary - 300) * 0.05;
+        return (200 * 0.05) + ((salary - 500) * 0.10);
+    }
+
+    // --- 5. Main Render Function ---
+    function render() {
+        // Render Deductions with Department Column
+        const deductionBody = document.getElementById('deductionBody');
+        deductionBody.innerHTML = deductions.map((d, index) => {
+            const emp = employees.find(e => e.id == d.empId);
+            const empName = emp ? emp.name : "Unknown";
+            const empDept = emp ? emp.department : (d.department || "N/A"); // Pulls saved department
+            const details = d.type === 'Loan' && d.months > 1 ? `$${parseFloat(d.totalAmount).toFixed(2)} total` : 'One-time';
+                
+            return `<tr>
+                <td style="font-weight: 500;">${empName}</td>
+                <td style="color: var(--text-muted);">${empDept}</td>
+                <td>${d.type} <span style="font-size:11px; color:#999;">(${details})</span></td>
+                <td><strong>$${parseFloat(d.monthlyDeduction).toFixed(2)}</strong></td>
+                <td>
+                    <button class="btn btn-sm btn-edit" onclick="editDeduction(${index})">Edit</button>
+                    <button class="btn btn-sm btn-delete" onclick="deleteDeduction(${index})">Del</button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        // Render Allowances with Department Column
+        const allowanceBody = document.getElementById('allowanceBody');
+        allowanceBody.innerHTML = allowances.map((a, index) => {
+            const emp = employees.find(e => e.id == a.empId);
+            const empName = emp ? emp.name : "Unknown";
+            const empDept = emp ? emp.department : (a.department || "N/A"); // Pulls saved department
+
+            return `<tr>
+                <td style="font-weight: 500;">${empName}</td>
+                <td style="color: var(--text-muted);">${empDept}</td>
+                <td>${a.type}</td>
+                <td><strong style="color: #27ae60;">+$${parseFloat(a.amount).toFixed(2)}</strong></td>
+                <td>
+                    <button class="btn btn-sm btn-edit" onclick="editAllowance(${index})">Edit</button>
+                    <button class="btn btn-sm btn-delete" onclick="deleteAllowance(${index})">Del</button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        // Render Payroll Table
+        const payrollBody = document.getElementById('payrollBody');
+        payrollBody.innerHTML = employees.map(e => {
+            const manualDeduction = deductions.filter(d => d.empId == e.id).reduce((sum, d) => sum + parseFloat(d.monthlyDeduction), 0);
+            const employeeAllowances = allowances.filter(a => a.empId == e.id).reduce((sum, a) => sum + parseFloat(a.amount), 0);
+
+            const empLogs = attendanceLogs.filter(log => log.empId == e.id);
+            const daysWorked = empLogs.filter(log => log.status === "Working Day").length;
+            const daysPH = empLogs.filter(log => log.status === "PH").length;
+            const daysAL = empLogs.filter(log => log.status === "AL").length;
+            const daysOT = empLogs.filter(log => log.status === "Overtime" || log.status === "OT").length;
+            
+            const totalPaidDays = daysWorked + daysPH + daysAL + daysOT;
+            const otBonusPay = daysOT * 10;
+            const dailyRate = e.basicSalary / 26;
+
+            const basePay = totalPaidDays * dailyRate;
+            const grossPay = basePay + otBonusPay + employeeAllowances;
+
+            const nssf = calcNSSF(grossPay);
+            const tax = calcTax(grossPay, e.salaryType);
+            
+            const totalDeductions = manualDeduction + nssf + tax;
+            const netPay = grossPay - totalDeductions;
+            
+            return `<tr>
+                <td>
+                    <span style="font-weight:500;">${e.name}</span><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">${e.department}</span>
+                </td>
+                <td>$${e.basicSalary.toFixed(2)}</td>
+                <td style="font-size: 12px; color: ${e.salaryType === 'Net' ? '#27ae60' : 'var(--text-muted)'};">${e.salaryType}</td>
+                <td style="color: var(--text-muted);">$${dailyRate.toFixed(2)}/day</td>
+                <td><span style="color: #27ae60; font-weight: 600;">${totalPaidDays} days</span></td>
+                <td><span style="color: #e67e22; font-weight: 600;">$${otBonusPay.toFixed(2)}</span></td>
+                <td><span style="color: #4a90e2; font-weight: 600;">$${employeeAllowances.toFixed(2)}</span></td>
+                <td><strong>$${grossPay.toFixed(2)}</strong></td>
+                <td>$${nssf.toFixed(2)}</td>
+                <td>$${tax.toFixed(2)}</td>
+                <td>$${manualDeduction.toFixed(2)}</td>
+                <td style="font-size: 15px; color: var(--primary-blue);"><strong>$${netPay.toFixed(2)}</strong></td>
+            </tr>`;
+        }).join('');
+    }
+
+    // --- 6. Manage Deductions ---
+    function saveDeductionData() { localStorage.setItem('deductionData', JSON.stringify(deductions)); }
+
+    function saveDeduction() {
+        const empId = document.getElementById('empSelect').value;
+        if(!empId) return alert("Please select an employee");
+
+        // Find the employee to save their current department
+        const emp = employees.find(e => e.id == empId);
+        const empDept = emp ? emp.department : 'N/A';
+
+        const type = document.getElementById('deductType').value;
+        const totalAmount = parseFloat(document.getElementById('deductAmount').value) || 0;
+        let months = 1;
+        let monthlyDeduction = totalAmount;
+
+        if (type === 'Loan') {
+            months = parseInt(document.getElementById('loanMonths').value) || 1;
+            monthlyDeduction = totalAmount / months;
+        }
+
+        const deductionEntry = {
+            empId: empId,
+            department: empDept, // Safely records the department
+            type: type,
+            totalAmount: totalAmount,
+            monthlyDeduction: monthlyDeduction,
+            months: months,
+            date: new Date().toLocaleDateString()
+        };
+
+        if (currentEditDeductIndex > -1) {
+            deductions[currentEditDeductIndex] = deductionEntry;
+        } else {
+            deductions.push(deductionEntry);
+        }
+        
+        saveDeductionData();
+        render();
+        closeModal();
+    }
+
+    function editDeduction(index) {
+        currentEditDeductIndex = index;
+        const d = deductions[index];
+        
+        resetDropdowns();
+        document.getElementById('deductModalTitle').innerText = "Edit Deduction";
+        document.getElementById('empSelect').value = d.empId;
+        document.getElementById('deductType').value = d.type;
+        document.getElementById('deductAmount').value = d.type === 'Loan' ? d.totalAmount : d.monthlyDeduction;
+        document.getElementById('loanMonths').value = d.months || '';
+        
+        toggleLoanFields();
+        document.getElementById('deductionModal').style.display = 'flex';
+    }
+
+    function deleteDeduction(index) {
+        if (confirm("Are you sure you want to delete this deduction?")) {
+            deductions.splice(index, 1);
+            saveDeductionData();
+            render();
+        }
+    }
+
+    // --- 7. Manage Allowances ---
+    function saveAllowanceData() { localStorage.setItem('allowanceData', JSON.stringify(allowances)); }
+
+    function saveAllowance() {
+        const empId = document.getElementById('allowanceEmpSelect').value;
+        if(!empId) return alert("Please select an employee");
+
+        // Find the employee to save their current department
+        const emp = employees.find(e => e.id == empId);
+        const empDept = emp ? emp.department : 'N/A';
+
+        const allowanceEntry = {
+            empId: empId,
+            department: empDept, // Safely records the department
+            type: document.getElementById('allowanceType').value,
+            amount: parseFloat(document.getElementById('allowanceAmount').value) || 0,
+            date: new Date().toLocaleDateString()
+        };
+
+        if (currentEditAllowanceIndex > -1) {
+            allowances[currentEditAllowanceIndex] = allowanceEntry;
+        } else {
+            allowances.push(allowanceEntry);
+        }
+
+        saveAllowanceData();
+        render();
+        closeAllowanceModal();
+    }
+
+    function editAllowance(index) {
+        currentEditAllowanceIndex = index;
+        const a = allowances[index];
+        
+        resetDropdowns();
+        document.getElementById('allowanceModalTitle').innerText = "Edit Allowance";
+        document.getElementById('allowanceEmpSelect').value = a.empId;
+        document.getElementById('allowanceType').value = a.type;
+        document.getElementById('allowanceAmount').value = a.amount;
+        
+        document.getElementById('allowanceModal').style.display = 'flex';
+    }
+
+    function deleteAllowance(index) {
+        if (confirm("Are you sure you want to delete this allowance?")) {
+            allowances.splice(index, 1);
+            saveAllowanceData();
+            render();
+        }
+    }
+
+    // --- 8. Modal Controls ---
+    function showModal() {
+        currentEditDeductIndex = -1;
+        resetDropdowns();
+        document.getElementById('deductModalTitle').innerText = "Add Manual Deduction";
+        document.getElementById('deductAmount').value = '';
+        document.getElementById('loanMonths').value = '';
+        document.getElementById('deductionModal').style.display = 'flex';
+        toggleLoanFields();
+    }
+    
+    function closeModal() { document.getElementById('deductionModal').style.display = 'none'; }
+
+    function showAllowanceModal() {
+        currentEditAllowanceIndex = -1;
+        resetDropdowns();
+        document.getElementById('allowanceModalTitle').innerText = "Add Allowance/Bonus";
+        document.getElementById('allowanceAmount').value = '';
+        document.getElementById('allowanceModal').style.display = 'flex';
+    }
+
+    function closeAllowanceModal() { document.getElementById('allowanceModal').style.display = 'none'; }
+
+    // Initialize on page load
+    resetDropdowns();
+    render();
+    toggleLoanFields();
+</script>
+<!-- REQUIRED AUTH GUARD SCRIPT -->
+<script>
+    (function checkAccess() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        
+        // 1. If not logged in at all, redirect to login page
+        if (!currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // 2. Identify the current page being requested
+        const path = window.location.pathname;
+        const currentPage = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+
+        // 3. Define limits based on roles
+        const role = currentUser.role;
+        let allowed = true;
+
+        if (role === 'HR' && !['HRM.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Finance' && !['finance.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Operation' && !['Operation.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        }
+
+        // 4. Kick out if not allowed
+        if (!allowed) {
+            alert("Access Denied: Your assigned role does not have permission to view this module.");
+            window.location.href = 'index.html';
+        }
+    })();
+</script>
+
+<script>
+    // --- UNIVERSAL AUTH & NAVIGATION GUARD ---
+    (function initAuthGuard() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+        // 1. Redirect if not logged in
+        if (!currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // 2. Identify current page
+        const path = window.location.pathname;
+        const currentPage = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+
+        // 3. Page Access Matrix
+        const role = currentUser.role;
+        let allowed = true;
+
+        if (role === 'HR' && !['HRM.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Finance' && !['finance.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Operation' && !['Operation.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role !== 'Admin' && currentPage === 'user.html') {
+            allowed = false;
+        }
+
+        // 4. Kick out if role is restricted
+        if (!allowed) {
+            alert("Access Denied: Your account role (" + role + ") does not have permission to view this page.");
+            window.location.href = 'index.html';
+            return;
+        }
+
+        // 5. Update Header with Current User Info
+        document.addEventListener("DOMContentLoaded", function() {
+            const nameElem = document.getElementById('currentUserName');
+            const roleElem = document.getElementById('currentUserRole');
+            
+            if (nameElem) nameElem.innerText = currentUser.username;
+            if (roleElem) roleElem.innerText = currentUser.role;
+        });
+    })();
+
+    // --- LOGOUT FUNCTION ---
+    function logout() {
+        if (confirm("Are you sure you want to log out?")) {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+    }
+</script>
+
+</body>
+</html>

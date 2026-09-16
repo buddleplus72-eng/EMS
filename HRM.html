@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUMAN RESOURCES Dashboard - Employee Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-blue: #4a90e2; --light-blue: #9bc2e6; --bg-color: #f4f7f6; --text-main: #333333; --text-muted: #666666; --card-bg: #ffffff; --border-color: #e1e4e8; --transition: all 0.3s ease; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; height: 100vh; overflow: hidden; }
+        .app-container { display: flex; flex-direction: column; height: 100vh; }
+        .top-header { background-color: var(--card-bg); padding: 20px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 100; flex-shrink: 0; }
+        .top-header h1 { font-size: 24px; font-weight: 700; color: var(--primary-blue); }
+        .main-workspace { display: flex; flex: 1; padding: 20px; gap: 20px; max-width: 1600px; margin: 0 auto; width: 100%; overflow: hidden; }
+        .sidebar { width: 240px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; overflow-y: auto; }
+        .nav-item { background-color: var(--card-bg); padding: 15px 20px; border-radius: 8px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: var(--transition); border: 1px solid transparent; text-decoration: none; display: block; }
+        .nav-item:hover, .nav-item.active { background-color: var(--light-blue); color: #1a365d; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(155, 194, 230, 0.4); }
+        .content-area { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; overflow: hidden; }
+        .card { background-color: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 2px 15px rgba(0,0,0,0.04); border: 1px solid var(--border-color); display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0; }
+        .card-title { font-size: 18px; font-weight: 600; color: var(--text-main); }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: var(--transition); font-size: 14px; }
+        .btn-primary { background-color: var(--primary-blue); color: white; }
+        .btn-edit { background-color: #f39c12; color: white; padding: 5px 10px; font-size: 12px; margin-right: 5px; }
+        .btn-delete { background-color: #e74c3c; color: white; padding: 5px 10px; font-size: 12px; }
+        .table-responsive { flex: 1; overflow: auto; border: 1px solid var(--border-color); border-radius: 6px; }
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background-color: #f8fafc; font-weight: 600; color: var(--text-muted); font-size: 13px; text-transform: uppercase; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border-color); }
+        tbody tr:hover { background-color: #f1f5f9; }
+        .status-active { color: green; font-weight: 500; }
+        .status-resign { color: red; font-weight: 500; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background-color: var(--card-bg); padding: 30px; border-radius: 12px; width: 90%; max-width: 750px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .close-btn { font-size: 24px; cursor: pointer; color: var(--text-muted); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; }
+        .full-width { grid-column: span 2; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; grid-column: span 2; }
+        .btn-cancel { background-color: #e1e4e8; color: var(--text-main); }
+    </style>
+    <style>
+        /* Header User Profile Layout */
+.top-header { 
+    background-color: var(--card-bg); 
+    padding: 20px 30px; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+.user-profile-bar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-info {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.user-role-badge {
+    background-color: var(--light-blue);
+    color: #1a365d;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+.logout-btn { 
+    background-color: #e74c3c; 
+    color: white; 
+    border: none; 
+    padding: 8px 16px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    transition: var(--transition); 
+}
+
+.logout-btn:hover { 
+    background-color: #c0392b; 
+}
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header class="top-header">
+    <h1>BUDDLEPLUS DASHBOARD</h1>
+    
+    <div class="user-profile-bar">
+        <div class="user-info">
+            👤 <span id="currentUserName">Loading...</span>
+            <span id="currentUserRole" class="user-role-badge">Role</span>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+</header>
+
+        <div class="main-workspace">
+            <nav class="sidebar">
+                <a href="index.html" class="nav-item">DASHBOARD</a>
+                <a href="HRM.html" class="nav-item active">HUMAN RESOURCES</a>
+                <a href="Operation.html" class="nav-item">OPERATION</a>
+                <a href="finance.html" class="nav-item">FINANCE</a>
+                <a href="report.html" class="nav-item">REPORT</a>
+                <a href="user.html" class="nav-item">USER</a>
+            </nav>
+
+            <main class="content-area">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Employee Directory</h2>
+                        <button class="btn btn-primary" onclick="openModal()">+ Add New Employee</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <!-- Added "Emp Type" to the table headers -->
+                                    <th>ID</th><th>Khmer Name</th><th>English Name</th><th>Sex</th><th>DOB</th><th>Nation ID</th>
+                                    <th>NSSF ID</th><th>Tel</th><th>Dept</th><th>Pos</th><th>Emp Type</th><th>Join Date</th><th>Work Days</th>
+                                    <th>Salary</th><th>Type</th><th>Bank</th><th>Acc</th><th>Status</th><th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeeTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Form -->
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle" class="card-title">Add Employee</h2>
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="employeeForm">
+                <input type="hidden" id="empSystemId">
+                <div class="form-grid">
+                    <div class="form-group"><label>Khmer Name</label><input type="text" id="khmerName" required></div>
+                    <div class="form-group"><label>English Name</label><input type="text" id="englishName" required></div>
+                    <div class="form-group"><label>Sex</label>
+                        <select id="sex">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Date of Birth</label><input type="date" id="dob" required></div>
+                    <div class="form-group"><label>Nation ID</label><input type="text" id="nationId" required></div>
+                    <div class="form-group"><label>NSSF ID</label><input type="text" id="nssfId"></div>
+                    <div class="form-group"><label>Tel Number</label><input type="tel" id="telNumber" required></div>
+                    <div class="form-group"><label>Department</label><input type="text" id="department" required></div>
+                    <div class="form-group"><label>Position</label>
+                        <select id="position">
+                            <option value="Managing Director">Managing Director</option>
+                            <option value="Sale Manager">Sale Manager</option>
+                            <option value="Sale Officer">Sale Officer</option>
+                            <option value="Operation Manager">Operation Manager</option>
+                            <option value="HR Manager">HR Manager</option>
+                            <option value="Accounting Manager">Accounting Manager</option>
+                            <option value="Deputy Operation Manager">Deputy Operation Manager</option>
+                            <option value="Operation Supervisor">Operation Supervisor</option>
+                            <option value="Assistant Operation Supervisor">Assistant Operation Supervisor</option>
+                            <option value="Quality Control Officer">Quality Control Officer</option>
+                            <option value="Team Leader">Team Leader</option>
+                            <option value="Accountant">Accountant</option>
+                            <option value="HR Officer">HR Officer</option>
+                            <option value="Mobile Team Manager">Mobile Team Manager</option>
+                            <option value="Mobile Team">Mobile Team</option>
+                            <option value="Pest Control officer">Pest Control officer</option>
+                            <option value="Janitor">Janitor</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Added Employment Type Selection here -->
+                    <div class="form-group"><label>Employment Type</label>
+                        <select id="empType">
+                            <option value="Full Time">Full Time</option>
+                            <option value="Part Time">Part Time</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group"><label>Join Date</label><input type="date" id="joinDate" required></div>
+                    <div class="form-group"><label>Working Days</label>
+                        <select id="workingDays">
+                            <option value="22">22</option><option value="26">26</option>
+                            <option value="27">27</option><option value="28">28</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Basic Salary ($)</label><input type="number" id="basicSalary" step="0.01" required></div>
+                    <div class="form-group"><label>Salary Type</label>
+                        <select id="salaryType"><option value="Gross">Gross</option><option value="Net">Net</option></select>
+                    </div>
+                    <div class="form-group"><label>Bank Type</label>
+                        <select id="bankType">
+                            <option value="ABA Bank">ABA Bank</option><option value="RHB Bank">RHB Bank</option>
+                            <option value="Wing Bank">Wing Bank</option><option value="Lyhour Bank">Lyhour Bank</option>
+                            <option value="Canadia Bank">Canadia Bank</option><option value="Cash">Cash</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Bank Name</label><input type="text" id="bankName"></div>
+                    <div class="form-group"><label>Bank Account Number</label><input type="text" id="bankNumber"></div>
+                    <div class="form-group full-width"><label>Status</label>
+                        <select id="status"><option value="Active">Active</option><option value="Resigned">Resigned</option></select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Employee</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 1. Initialize from localStorage
+        let storedData = localStorage.getItem('employeeData');
+        let employees = storedData ? JSON.parse(storedData) : [];
+
+        // FIX: Automatically remove any old/corrupted data that is missing an ID or Name
+        employees = employees.filter(emp => emp.id && emp.englishName && emp.id !== "undefined");
+
+        // Ensure clean data is saved back to storage
+        saveEmployeesToStorage();
+
+        function saveEmployeesToStorage() {
+            localStorage.setItem('employeeData', JSON.stringify(employees));
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('employeeTableBody');
+            tbody.innerHTML = ''; 
+            
+            if (employees.length === 0) {
+                // Updated colspan to 19 to match new column count
+                tbody.innerHTML = `<tr><td colspan="19" style="text-align: center; color: var(--text-muted); padding: 20px;">No employees found. Click "+ Add New Employee" to begin.</td></tr>`;
+                return;
+            }
+
+            employees.forEach(emp => {
+                // Combine Bank Type and Bank Name for proper table alignment
+                let bankDisplay = emp.bankType || '-';
+                if (emp.bankName && emp.bankName.trim() !== '') {
+                    bankDisplay += ` (${emp.bankName})`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${emp.id || '-'}</td>
+                    <td>${emp.khmerName || '-'}</td>
+                    <td>${emp.englishName || '-'}</td>
+                    <td>${emp.sex || '-'}</td>
+                    <td>${emp.dob || '-'}</td>
+                    <td>${emp.nationId || '-'}</td>
+                    <td>${emp.nssfId || '-'}</td>
+                    <td>${emp.telNumber || '-'}</td>
+                    <td>${emp.department || '-'}</td>
+                    <td>${emp.position || '-'}</td>
+                    <td>${emp.empType || 'Full Time'}</td> <!-- Display new empType -->
+                    <td>${emp.joinDate || '-'}</td>
+                    <td>${emp.workingDays || '-'}</td>
+                    <td>$${parseFloat(emp.basicSalary || 0).toFixed(2)}</td>
+                    <td>${emp.salaryType || '-'}</td>
+                    <td>${bankDisplay}</td>
+                    <td>${emp.bankNumber || '-'}</td>
+                    <td><span class="${emp.status === 'Active' ? 'status-active' : 'status-resign'}">${emp.status || '-'}</span></td>
+                    <td>
+                        <button class="btn btn-edit" onclick="editEmployee('${emp.id}')">Edit</button>
+                        <button class="btn btn-delete" onclick="deleteEmployee('${emp.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        const modal = document.getElementById('employeeModal');
+        const form = document.getElementById('employeeForm');
+
+        function openModal() { 
+            modal.style.display = 'flex'; 
+            document.getElementById('modalTitle').innerText = 'Add New Employee'; 
+            form.reset(); 
+            document.getElementById('empSystemId').value = ''; 
+        }
+        
+        function closeModal() { 
+            modal.style.display = 'none'; 
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const empSystemId = document.getElementById('empSystemId').value;
+            
+            // Added empType to the data object
+            const data = {
+                khmerName: document.getElementById('khmerName').value,
+                englishName: document.getElementById('englishName').value,
+                sex: document.getElementById('sex').value,
+                dob: document.getElementById('dob').value,
+                nationId: document.getElementById('nationId').value,
+                nssfId: document.getElementById('nssfId').value,
+                telNumber: document.getElementById('telNumber').value,
+                department: document.getElementById('department').value,
+                position: document.getElementById('position').value,
+                empType: document.getElementById('empType').value, // Capture the new dropdown
+                joinDate: document.getElementById('joinDate').value,
+                workingDays: document.getElementById('workingDays').value,
+                basicSalary: document.getElementById('basicSalary').value,
+                salaryType: document.getElementById('salaryType').value,
+                bankType: document.getElementById('bankType').value,
+                bankName: document.getElementById('bankName').value,
+                bankNumber: document.getElementById('bankNumber').value,
+                status: document.getElementById('status').value
+            };
+
+            if (empSystemId) {
+                const index = employees.findIndex(e => e.id === empSystemId);
+                employees[index] = { id: empSystemId, ...data };
+            } else {
+                let nextIdNum = 1;
+                if (employees.length > 0) {
+                    const ids = employees.map(emp => parseInt(emp.id.replace('EMP-', '')) || 0);
+                    nextIdNum = Math.max(...ids) + 1;
+                }
+                data.id = `EMP-${String(nextIdNum).padStart(3, '0')}`;
+                employees.push(data);
+            }
+            
+            closeModal();
+            renderTable();
+            saveEmployeesToStorage(); 
+        });
+
+        function editEmployee(id) {
+            const emp = employees.find(e => e.id === id);
+            Object.keys(emp).forEach(key => {
+                const el = document.getElementById(key);
+                if (el) el.value = emp[key];
+            });
+            document.getElementById('empSystemId').value = emp.id;
+            document.getElementById('modalTitle').innerText = 'Edit Employee';
+            modal.style.display = 'flex';
+        }
+
+        function deleteEmployee(id) {
+            if (confirm('Are you sure you want to delete this employee?')) {
+                employees = employees.filter(e => e.id !== id);
+                renderTable();
+                saveEmployeesToStorage(); 
+            }
+        }
+        
+        window.onload = renderTable;
+    </script>
+
+    <!-- REQUIRED AUTH GUARD SCRIPT -->
+<script>
+    (function checkAccess() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        
+        // 1. If not logged in at all, redirect to login page
+        if (!currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // 2. Identify the current page being requested
+        const path = window.location.pathname;
+        const currentPage = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+
+        // 3. Define limits based on roles
+        const role = currentUser.role;
+        let allowed = true;
+
+        if (role === 'HR' && !['HRM.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Finance' && !['finance.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Operation' && !['Operation.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        }
+
+        // 4. Kick out if not allowed
+        if (!allowed) {
+            alert("Access Denied: Your assigned role does not have permission to view this module.");
+            window.location.href = 'index.html';
+        }
+    })();
+</script>
+<script>
+    // --- UNIVERSAL AUTH & NAVIGATION GUARD ---
+    (function initAuthGuard() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+        // 1. Redirect if not logged in
+        if (!currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // 2. Identify current page
+        const path = window.location.pathname;
+        const currentPage = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
+
+        // 3. Page Access Matrix
+        const role = currentUser.role;
+        let allowed = true;
+
+        if (role === 'HR' && !['HRM.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Finance' && !['finance.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role === 'Operation' && !['Operation.html', 'index.html', 'report.html'].includes(currentPage)) {
+            allowed = false;
+        } else if (role !== 'Admin' && currentPage === 'user.html') {
+            allowed = false;
+        }
+
+        // 4. Kick out if role is restricted
+        if (!allowed) {
+            alert("Access Denied: Your account role (" + role + ") does not have permission to view this page.");
+            window.location.href = 'index.html';
+            return;
+        }
+
+        // 5. Update Header with Current User Info
+        document.addEventListener("DOMContentLoaded", function() {
+            const nameElem = document.getElementById('currentUserName');
+            const roleElem = document.getElementById('currentUserRole');
+            
+            if (nameElem) nameElem.innerText = currentUser.username;
+            if (roleElem) roleElem.innerText = currentUser.role;
+        });
+    })();
+
+    // --- LOGOUT FUNCTION ---
+    function logout() {
+        if (confirm("Are you sure you want to log out?")) {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+    }
+</script>
+<script>
+    // 1. Get the current logged-in user
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+    // 2. Function to check what this user is allowed to do
+    function applyLevelPermissions() {
+        const userLevel = currentUser.level; 
+
+        // --- HIDE/SHOW BUTTONS based on level ---
+        // Let's assume you have a button with id="createManagerBtn"
+        const createManagerBtn = document.getElementById('createManagerBtn');
+        
+        if (createManagerBtn) {
+            if (userLevel === 'Manager') {
+                createManagerBtn.style.display = 'inline-block'; // Manager can see it
+            } else {
+                createManagerBtn.style.display = 'none'; // Supervisor and Staff cannot
+            }
+        }
+
+        // --- FILTER TABLE DATA based on level ---
+        // Let's assume you pull your employee list from localStorage
+        let allEmployees = JSON.parse(localStorage.getItem('employeeData')) || [];
+        
+        let visibleEmployees = allEmployees.filter(emp => {
+            if (userLevel === 'Manager') {
+                return true; // Manager sees everyone
+            } 
+            else if (userLevel === 'Supervisor') {
+                // Supervisor sees Supervisors and Staff, but NOT Managers
+                return emp.level === 'Supervisor' || emp.level === 'Staff';
+            } 
+            else if (userLevel === 'Staff') {
+                // Staff only sees other Staff
+                return emp.level === 'Staff';
+            }
+            return false;
+        });
+
+        // 3. Send the filtered list to your table drawing function
+        renderEmployeeTable(visibleEmployees);
+    }
+
+    // Example function to draw your table
+    function renderEmployeeTable(data) {
+        const tbody = document.getElementById('employeeTableBody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = ''; // Clear table
+        
+        data.forEach(emp => {
+            const row = `<tr>
+                <td>${emp.name}</td>
+                <td>${emp.role}</td>
+                <td>${emp.level}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    // Run permissions check as soon as the page loads
+    document.addEventListener("DOMContentLoaded", applyLevelPermissions);
+</script>
+
+</body>
+</html>
